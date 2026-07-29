@@ -5,6 +5,11 @@ import { clerkClient, getAuth } from "@clerk/express";
 
 
 
+/**
+ * Retrieves the currently authenticated user's record.
+ *
+ * Responds with `404` if the user cannot be found and `500` if retrieval fails.
+ */
 export async function getMe(req:AuthRequest,res:Response,next:NextFunction) {
     
 try {
@@ -27,6 +32,13 @@ try {
 }
 
 
+/**
+ * Synchronizes the authenticated Clerk user with the application database.
+ *
+ * @param req - The incoming request containing Clerk authentication details
+ * @param res - The response used to return the user record
+ * @param next - The callback for forwarding processing errors
+ */
 export async function authCallback(req: Request, res: Response, next: NextFunction) {
   try {
     const { userId: clerkId } = getAuth(req);
