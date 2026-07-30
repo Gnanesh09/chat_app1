@@ -5,6 +5,9 @@ import messageRoutes from "./routes/messageRoutes"
 import userRoutes from "./routes/userRoutes"
 import { clerkClient, clerkMiddleware, getAuth } from "@clerk/express"
 import { errorHandler } from "./middleware/errorHandler"
+import path  from "path"
+
+
 const app = express()
 
 const PORT = process.env.PORT || 3000
@@ -43,4 +46,14 @@ app.use("/api/users", userRoutes)
 
 
 app.use(errorHandler)
+
+
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../../web/dist")));
+
+  app.get("/{*any}", (_, res) => {
+    res.sendFile(path.join(__dirname, "../../web/dist/index.html"));
+  });
+}
+
 export default app
