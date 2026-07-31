@@ -1,5 +1,5 @@
-import { ScrollView, Text, StatusBar } from "react-native";
-
+import { ScrollView, Text, StatusBar, Button } from "react-native";
+import * as Sentry from "@sentry/react-native";
 export default function ChatsTab() {
   return (
     <ScrollView
@@ -10,6 +10,12 @@ export default function ChatsTab() {
       className="bg-surface"
     >
       <Text className="text-yellow-300">ChatsTab</Text>
+      <Button
+        title="Try!"
+        onPress={() => {
+          Sentry.captureException(new Error("First error"));
+        }}
+      />
     </ScrollView>
   );
 }

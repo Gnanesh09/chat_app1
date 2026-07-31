@@ -36,7 +36,15 @@
       "expo-font",
       "expo-web-browser",
       "@clerk/expo",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "cgat-app",
+          "organization": "wire-rail-technologies"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
