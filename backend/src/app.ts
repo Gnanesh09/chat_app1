@@ -6,10 +6,14 @@ import userRoutes from "./routes/userRoutes"
 import { clerkClient, clerkMiddleware, getAuth } from "@clerk/express"
 import { errorHandler } from "./middleware/errorHandler"
 import path  from "path"
-
+import cors from "cors";
 
 const app = express()
-
+app.use(cors({
+  origin: "*", 
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  credentials: true
+}));
 const PORT = process.env.PORT || 3000
 app.use(express.json())
 
