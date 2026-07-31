@@ -6,5 +6,5 @@ const router = Router()
 
 
 router.get("/me",protectRoute,getMe)
-router.post("/callback",protectRoute,authCallback)
+router.post("/callback",authCallback)
 export default router
