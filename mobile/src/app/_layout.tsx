@@ -1,18 +1,35 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { Stack } from "expo-router";
+import "../../global.css";
+import { ClerkProvider } from "@clerk/expo";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { tokenCache } from "@clerk/expo/token-cache";
+import AuthSync from "../../components/AuthSync";
+const queryClient = new QueryClient();
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
-SplashScreen.preventAutoHideAsync();
+if (!publishableKey) {
+  throw new Error("Add your Clerk Publishable Key to the .env file");
+}
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function RootLayout() {
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+      <QueryClientProvider client={queryClient}>
+        <AuthSync />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: "#0d0d0f" },
+          }}
+        >
+          <Stack.Screen
+            name="(auth)"
+            options={{ animation: "slide_from_right" }}
+          />
+          <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
+        </Stack>
+      </QueryClientProvider>
+    </ClerkProvider>
   );
 }
