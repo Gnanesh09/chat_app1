@@ -1,12 +1,17 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "anytext",
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
     "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1A1A1D"
+    },
     "ios": {
       "icon": "./assets/expo.icon"
     },
@@ -28,7 +33,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#1A1A1D",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
@@ -49,6 +54,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "37e35388-c0c3-4f5f-af6a-bbf5d8877e78"
+      }
     }
   }
 }

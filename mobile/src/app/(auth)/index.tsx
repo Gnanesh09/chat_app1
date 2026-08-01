@@ -1,7 +1,6 @@
 import {
   View,
   Text,
-  Dimensions,
   Pressable,
   ActivityIndicator,
   StatusBar,
@@ -9,30 +8,44 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import useAuthSocial from "../../../hooks/useSocialAuth";
-
-const { width } = Dimensions.get("window");
 
 const AuthScreen = () => {
   const { handleSocialAuth, loadingStrategy } = useAuthSocial();
   const isLoading = loadingStrategy !== null;
 
   return (
-    <View className="flex-1 bg-[#1A1A2E]">
-      <StatusBar barStyle="light-content" />
+    <View className="flex-1">
+      {/* Translucent status bar lets the gradient bleed behind the camera notch */}
+      <StatusBar
+        barStyle="light-content"
+        translucent
+        backgroundColor="transparent"
+      />
 
-      {/* 1. TOP HERO SECTION (Visual/Brand Area) */}
-      <SafeAreaView className="flex-1 items-center justify-center">
-        {/* Replace with your actual hero graphic/logo */}
-        <Image
-          source={require("../../../assets/images/auth.png")}
-          style={{ width: width * 0.8, height: width * 0.8, maxHeight: 320 }}
-          contentFit="contain"
-        />
+      {/* FULL SCREEN BACKGROUND GRADIENT */}
+      <LinearGradient
+        colors={["#FF5D0D", "#FF5D0D", "#0D0D0F"]}
+        start={{ x: 0.1, y: 0 }}
+        end={{ x: 0.9, y: 0.8 }}
+        style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
+      />
+      {/* 1. TOP HERO SECTION (Beautiful Typography) */}
+      <SafeAreaView className="flex-1 justify-center px-8">
+        <View className="mb-10">
+          <Text className="text-white text-7xl font-black tracking-tighter mb-4 shadow-sm">
+            Text to Anybody
+          </Text>
+          <Text className="text-white/80 text-lg font-medium leading-relaxed pr-8">
+            Talking is boundryless, share as much as you can, find friends and
+            build connection
+          </Text>
+        </View>
       </SafeAreaView>
 
-      {/* 2. ZEPTO / ZOMATO STYLE BOTTOM ACTION SHEET */}
-      <View className="bg-white rounded-t-[32px] px-6 pt-8 pb-10 shadow-2xl">
+      {/* 2. BOTTOM ACTION SHEET */}
+      <View className="bg-white rounded-t-[36px] px-6 pt-8 pb-10 shadow-2xl">
         {/* Header Typography */}
         <View className="mb-8 mt-2">
           <Text className="text-3xl font-black text-gray-900 mb-2 tracking-tight">
@@ -92,6 +105,9 @@ const AuthScreen = () => {
         {/* Footer Terms */}
         <Text className="text-center text-gray-400 text-xs mt-8 font-medium">
           By continuing, you agree to our Terms of Service & Privacy Policy
+        </Text>
+        <Text className="text-center text-gray-800 text-[8px] mt-3 font-medium">
+          Developed by zoofly Inc .
         </Text>
       </View>
     </View>

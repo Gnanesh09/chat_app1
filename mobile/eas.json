@@ -1,0 +1,28 @@
+{
+  "cli": {
+    "version": ">= 16.28.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_ZmluZXItbWluay0xMi5jbGVyay5hY2NvdW50cy5kZXYk",
+        "SENTRY_AUTH_TOKEN": "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"
+      }
+    },
+    "production": {
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

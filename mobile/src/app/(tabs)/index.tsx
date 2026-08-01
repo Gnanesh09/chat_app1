@@ -11,6 +11,8 @@ import {
   Text,
   View,
 } from "react-native";
+// 1. Add this import!
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const ChatsTab = () => {
   const router = useRouter();
@@ -18,15 +20,23 @@ const ChatsTab = () => {
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-surface items-center justify-center">
+      // 2. Wrap loading state in SafeAreaView
+      <SafeAreaView
+        className="flex-1 bg-surface items-center justify-center"
+        edges={["top"]}
+      >
         <ActivityIndicator size={"large"} color={"#f4A261"} />
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <View className="flex-1 bg-surface items-center justify-center">
+      // 3. Wrap error state in SafeAreaView
+      <SafeAreaView
+        className="flex-1 bg-surface items-center justify-center"
+        edges={["top"]}
+      >
         <Text className="text-red-500 text-3xl">Failed to load chats</Text>
         <Pressable
           onPress={() => refetch()}
@@ -34,7 +44,7 @@ const ChatsTab = () => {
         >
           <Text className="text-foreground">Retry</Text>
         </Pressable>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -51,7 +61,8 @@ const ChatsTab = () => {
   };
 
   return (
-    <View className="flex-1 bg-surface">
+    // 4. Wrap the main screen in SafeAreaView
+    <SafeAreaView className="flex-1 bg-surface" edges={["top"]}>
       <FlatList
         data={chats}
         keyExtractor={(item) => item._id}
@@ -78,7 +89,7 @@ const ChatsTab = () => {
           />
         }
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -88,6 +99,7 @@ function Header() {
   const router = useRouter();
 
   return (
+    // No changes needed here! The SafeAreaView above handles it.
     <View className="px-5 pt-2 pb-4">
       <View className="flex-row items-center justify-between">
         <Text className="text-2xl font-bold text-foreground">Chats</Text>
