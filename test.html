@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn Candidate Insights Pro</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        linkedin: '#0a66c2',
+                        glass: 'rgba(30, 41, 59, 0.7)',
+                        glassBorder: 'rgba(255, 255, 255, 0.1)',
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #0f2842 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .glass-card {
+            background: var(--tw-colors-glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--tw-colors-glassBorder);
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+        .timeline-dot {
+            width: 12px; height: 12px;
+            background-color: #3b82f6;
+            border-radius: 50%;
+            position: absolute;
+            left: -6px; top: 6px;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+        
+        .timeline-line {
+            border-left: 2px solid rgba(59, 130, 246, 0.3);
+            position: relative;
+        }
+    </style>
+</head>
+<body class="custom-scrollbar overflow-x-hidden">
+
+    <!-- Navbar -->
+    <nav class="sticky top-0 z-50 glass-card mx-4 mt-4 mb-8 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 rounded-2xl">
+        <div class="flex items-center gap-3">
+            <i class="fa-brands fa-linkedin text-3xl text-linkedin"></i>
+            <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300">LinkedIn Analyzer</h1>
+        </div>
+        
+        <div class="flex flex-col md:flex-row w-full md:w-auto gap-3 items-center">
+            <div class="relative w-full md:w-64">
+                <i class="fa-solid fa-key absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <!-- API KEY INPUT -->
+                <input type="password" id="api-key" placeholder="Proxycurl API Key" class="w-full bg-black/30 border border-gray-600 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:border-linkedin text-sm">
+            </div>
+            
+            <div class="relative w-full md:w-96">
+                <i class="fa-solid fa-link absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <input type="text" id="profile-url" placeholder="Enter LinkedIn Profile URL..." class="w-full bg-black/30 border border-gray-600 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:border-linkedin">
+            </div>
+            <button id="analyze-btn" class="w-full md:w-auto px-6 py-2 bg-linkedin hover:bg-blue-600 rounded-lg font-semibold transition-all shadow-lg shadow-linkedin/30 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-bolt"></i> Analyze
+            </button>
+        </div>
+    </nav>
+
+    <!-- Initial State -->
+    <div id="empty-state" class="flex flex-col items-center justify-center h-[60vh] text-center px-4">
+        <i class="fa-brands fa-linkedin text-6xl text-gray-600 mb-6"></i>
+        <h2 class="text-3xl font-bold mb-2">Analyze Professional Profiles</h2>
+        <p class="text-gray-400 max-w-md">Enter a LinkedIn URL and your API Key to extract experience, education, skills, and generate a candidate scoring matrix.</p>
+        <div class="mt-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg text-sm text-blue-200 max-w-lg">
+            <i class="fa-solid fa-circle-check mb-2 text-blue-400 text-lg"></i><br>
+            Configured for the <strong>Proxycurl API</strong>. If the API key is left blank, it will automatically fall back to generating Demo Data.
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="hidden flex flex-col items-center justify-center h-[60vh]">
+        <i class="fa-brands fa-linkedin text-5xl text-linkedin animate-pulse-fast mb-4"></i>
+        <h3 class="text-xl font-semibold text-white">Extracting Profile Data...</h3>
+        <p class="text-sm text-gray-400 mt-2">Bypassing restrictions and parsing professional history</p>
+    </div>
+
+    <!-- Dashboard -->
+    <main id="dashboard" class="hidden max-w-7xl mx-auto px-4 pb-20 space-y-8">
+        
+        <!-- Header Section -->
+        <div class="glass-card overflow-hidden">
+            <div class="h-32 bg-gradient-to-r from-blue-900 to-slate-800 relative" id="cover-photo"></div>
+            <div class="px-8 pb-8 relative">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 -mt-16 mb-4">
+                    <img id="avatar" src="" alt="Avatar" class="w-32 h-32 rounded-full border-4 border-slate-900 shadow-xl object-cover bg-slate-800">
+                    <div class="flex gap-3">
+                        <button class="px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-sm hover:bg-slate-700 transition-colors"><i class="fa-solid fa-download mr-1"></i> Export PDF</button>
+                        <a id="original-link" href="#" target="_blank" class="px-4 py-2 bg-linkedin hover:bg-blue-600 rounded-lg text-sm font-semibold transition-colors shadow-lg shadow-linkedin/20"><i class="fa-brands fa-linkedin mr-1"></i> View on LinkedIn</a>
+                    </div>
+                </div>
+                
+                <h2 id="name" class="text-3xl font-bold text-white mb-1"></h2>
+                <h3 id="headline" class="text-lg text-blue-300 font-medium mb-3"></h3>
+                
+                <div class="flex flex-wrap gap-4 text-sm text-gray-400">
+                    <span class="flex items-center gap-1"><i class="fa-solid fa-location-dot"></i> <span id="location"></span></span>
+                    <span class="flex items-center gap-1"><i class="fa-solid fa-users"></i> <span id="connections"></span> Connections</span>
+                    <span class="flex items-center gap-1"><i class="fa-solid fa-building"></i> Current: <span id="current-company" class="text-white font-medium"></span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left Column: About & Skills -->
+            <div class="lg:col-span-1 space-y-8">
+                <!-- About -->
+                <div class="glass-card p-6">
+                    <h4 class="text-lg font-bold text-white border-b border-slate-700 pb-2 mb-4"><i class="fa-solid fa-user mr-2 text-linkedin"></i> Executive Summary</h4>
+                    <p id="summary" class="text-sm text-gray-300 leading-relaxed"></p>
+                </div>
+
+                <!-- Skills Analysis -->
+                <div class="glass-card p-6">
+                    <h4 class="text-lg font-bold text-white border-b border-slate-700 pb-2 mb-4"><i class="fa-solid fa-chart-pie mr-2 text-linkedin"></i> Skill Distribution</h4>
+                    <div class="h-48 relative mb-6">
+                        <canvas id="skillsChart"></canvas>
+                    </div>
+                    <div id="skills-tags" class="flex flex-wrap gap-2">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Candidate Score -->
+                <div class="glass-card p-6 bg-gradient-to-b from-slate-800 to-slate-900 border-linkedin/30">
+                    <h4 class="text-lg font-bold text-white mb-4"><i class="fa-solid fa-check-to-slot mr-2 text-linkedin"></i> Fit Score</h4>
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="relative w-20 h-20 flex items-center justify-center bg-slate-800 rounded-full border-4 border-linkedin shadow-[0_0_15px_rgba(10,102,194,0.3)]">
+                            <span id="fit-score" class="text-2xl font-black text-white"></span>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex justify-between text-xs mb-1"><span class="text-gray-400">Tenure Stability</span><span class="text-emerald-400">High</span></div>
+                            <div class="w-full bg-slate-700 rounded-full h-1.5 mb-3"><div class="bg-emerald-500 h-1.5 rounded-full" style="width: 85%"></div></div>
+                            
+                            <div class="flex justify-between text-xs mb-1"><span class="text-gray-400">Role Progression</span><span class="text-blue-400">Strong</span></div>
+                            <div class="w-full bg-slate-700 rounded-full h-1.5"><div class="bg-blue-500 h-1.5 rounded-full" style="width: 90%"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Experience & Education -->
+            <div class="lg:col-span-2 space-y-8">
+                
+                <!-- Experience Timeline -->
+                <div class="glass-card p-6">
+                    <h4 class="text-xl font-bold text-white border-b border-slate-700 pb-2 mb-6"><i class="fa-solid fa-briefcase mr-2 text-linkedin"></i> Professional Experience</h4>
+                    <div id="experience-container" class="pl-4 timeline-line space-y-8">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Education -->
+                <div class="glass-card p-6">
+                    <h4 class="text-xl font-bold text-white border-b border-slate-700 pb-2 mb-6"><i class="fa-solid fa-graduation-cap mr-2 text-linkedin"></i> Education</h4>
+                    <div id="education-container" class="space-y-6">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const els = {
+            btn: document.getElementById('analyze-btn'),
+            input: document.getElementById('profile-url'),
+            apiKey: document.getElementById('api-key'),
+            empty: document.getElementById('empty-state'),
+            loader: document.getElementById('loading-state'),
+            dashboard: document.getElementById('dashboard'),
+        };
+
+        let skillsChartInstance = null;
+
+        els.btn.addEventListener('click', analyzeProfile);
+        els.input.addEventListener('keypress', (e) => { if(e.key === 'Enter') analyzeProfile(); });
+
+        async function analyzeProfile() {
+            const url = els.input.value.trim();
+            const key = els.apiKey.value.trim();
+            
+            if (!url) return alert("Please enter a LinkedIn Profile URL.");
+
+            els.empty.classList.add('hidden');
+            els.dashboard.classList.add('hidden');
+            els.loader.classList.remove('hidden');
+
+            try {
+                // Determine if we are making a real API call or using Demo Data
+                const profileData = key 
+                    ? await fetchRealData(url, key) 
+                    : await generateMockData(url);
+
+                renderProfile(profileData);
+                renderCharts(profileData.skillCategories);
+                
+                els.loader.classList.add('hidden');
+                els.dashboard.classList.remove('hidden');
+
+            } catch (error) {
+                console.error(error);
+                alert(`Error analyzing profile: ${error.message}`);
+                els.loader.classList.add('hidden');
+                els.empty.classList.remove('hidden');
+            }
+        }
+
+        // ==========================================
+        // REAL API CALL (Using Proxycurl & CORS Proxy)
+        // ==========================================
+        async function fetchRealData(profileUrl, apiKey) {
+            // Proxycurl Endpoint
+            const targetUrl = `https://nubela.co/proxycurl/api/v2/linkedin?url=${encodeURIComponent(profileUrl)}&skills=include`;
+            
+            // Bypass browser CORS block using corsproxy.io
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+
+            const response = await fetch(proxyUrl, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`API returned ${response.status}: Ensure your API key is valid and you have enough credits.`);
+            }
+
+            const data = await response.json();
+
+            // Transform raw Proxycurl data into our UI structure
+            return {
+                url: profileUrl,
+                full_name: data.full_name || "Unknown Name",
+                headline: data.headline || "No headline provided",
+                location: `${data.city ? data.city + ', ' : ''}${data.country_full_name || ''}`,
+                connections: data.follower_count ? data.follower_count + "+" : "500+",
+                profile_pic: data.profile_pic_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.full_name || 'User')}&background=0f172a&color=3b82f6`,
+                summary: data.summary || data.about || "No summary provided.",
+                skills: data.skills || [],
+                skillCategories: extractRadarData(data), // Generate data for the chart
+                experience: (data.experiences || []).map(exp => ({
+                    title: exp.title,
+                    company: exp.company,
+                    location: exp.location || "Remote",
+                    duration: `${formatDate(exp.starts_at)} - ${formatDate(exp.ends_at)}`,
+                    description: exp.description || ""
+                })),
+                education: (data.education || []).map(edu => ({
+                    school: edu.school,
+                    degree: edu.degree_name || "Degree",
+                    year: `${formatDate(edu.starts_at)} - ${formatDate(edu.ends_at)}`
+                }))
+            };
+        }
+
+        // Helper to format Proxycurl dates
+        function formatDate(dateObj) {
+            if (!dateObj || !dateObj.year) return "Present";
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            return `${dateObj.month ? months[dateObj.month - 1] + ' ' : ''}${dateObj.year}`;
+        }
+
+        // Helper to generate dynamic Radar Chart data by scanning the profile text
+        function extractRadarData(rawProfileData) {
+            const textStr = JSON.stringify(rawProfileData).toLowerCase();
+            
+            // Baseline scores
+            let categories = { 'Frontend': 25, 'Backend': 25, 'DevOps': 25, 'Database': 25, 'Architecture': 25, 'Leadership': 25 };
+
+            const keywords = {
+                'Frontend': ['react', 'vue', 'angular', 'javascript', 'css', 'html', 'frontend', 'ui', 'ux', 'tailwind'],
+                'Backend': ['node', 'python', 'java', 'c#', 'php', 'backend', 'api', 'django', 'spring', 'go', 'ruby'],
+                'DevOps': ['aws', 'docker', 'kubernetes', 'ci/cd', 'jenkins', 'cloud', 'azure', 'devops', 'gcp', 'terraform'],
+                'Database': ['sql', 'postgres', 'mongo', 'redis', 'database', 'mysql', 'nosql', 'oracle', 'cassandra'],
+                'Architecture': ['microservices', 'system design', 'architecture', 'scalable', 'distributed', 'kafka'],
+                'Leadership': ['lead', 'manager', 'director', 'senior', 'managed', 'team', 'agile', 'scrum', 'vp', 'head']
+            };
+
+            for (const [cat, words] of Object.entries(keywords)) {
+                let hitCount = 0;
+                words.forEach(w => {
+                    // Quick and dirty keyword count
+                    const regex = new RegExp(`\\b${w}\\b`, 'g');
+                    const matches = textStr.match(regex);
+                    if (matches) hitCount += matches.length;
+                });
+                
+                // Add points based on keyword frequency, maxing out at 98
+                categories[cat] = Math.min(98, 25 + (hitCount * 8));
+            }
+            return categories;
+        }
+
+        function renderProfile(data) {
+            // Calculate a composite Fit Score based on radar data
+            const radarVals = Object.values(data.skillCategories);
+            const fitScore = Math.round(radarVals.reduce((a, b) => a + b, 0) / radarVals.length);
+            
+            // Header
+            document.getElementById('avatar').src = data.profile_pic;
+            document.getElementById('name').innerText = data.full_name;
+            document.getElementById('headline').innerText = data.headline;
+            document.getElementById('location').innerText = data.location;
+            document.getElementById('connections').innerText = data.connections;
+            document.getElementById('current-company').innerText = data.experience.length > 0 ? data.experience[0].company : 'Independent';
+            document.getElementById('summary').innerText = data.summary;
+            document.getElementById('original-link').href = data.url;
+            document.getElementById('fit-score').innerText = fitScore;
+
+            // Skills Tags
+            const tagsContainer = document.getElementById('skills-tags');
+            if(data.skills.length > 0) {
+                // Slice top 15 skills to keep UI clean
+                tagsContainer.innerHTML = data.skills.slice(0, 15).map(skill => 
+                    `<span class="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-xs text-gray-300 shadow-sm">${typeof skill === 'object' ? skill.name : skill}</span>`
+                ).join('');
+            } else {
+                tagsContainer.innerHTML = "<span class='text-xs text-gray-500 italic'>No skills explicitly listed. Data extracted from summary/experience.</span>";
+            }
+
+            // Experience
+            const expContainer = document.getElementById('experience-container');
+            if (data.experience.length > 0) {
+                expContainer.innerHTML = data.experience.map(exp => `
+                    <div class="relative pl-6">
+                        <div class="timeline-dot"></div>
+                        <div class="flex flex-col md:flex-row md:justify-between md:items-start mb-1">
+                            <h5 class="text-lg font-bold text-white">${exp.title}</h5>
+                            <span class="text-sm font-mono text-linkedin bg-blue-900/20 px-2 py-0.5 rounded border border-blue-800 shrink-0 mt-1 md:mt-0">${exp.duration}</span>
+                        </div>
+                        <h6 class="text-md font-medium text-gray-400 mb-2">${exp.company} &bull; ${exp.location}</h6>
+                        <p class="text-sm text-gray-300 leading-relaxed">${exp.description}</p>
+                    </div>
+                `).join('');
+            } else {
+                expContainer.innerHTML = "<p class='text-sm text-gray-500 italic'>No experience data found.</p>";
+            }
+
+            // Education
+            const eduContainer = document.getElementById('education-container');
+            if (data.education.length > 0) {
+                eduContainer.innerHTML = data.education.map(edu => `
+                    <div class="flex items-start gap-4 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+                        <div class="w-12 h-12 bg-slate-700 rounded flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-building-columns text-xl text-gray-400"></i>
+                        </div>
+                        <div>
+                            <h5 class="text-md font-bold text-white">${edu.school}</h5>
+                            <h6 class="text-sm text-gray-300">${edu.degree}</h6>
+                            <p class="text-xs text-gray-500 mt-1">${edu.year}</p>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                eduContainer.innerHTML = "<p class='text-sm text-gray-500 italic'>No education data found.</p>";
+            }
+        }
+
+        function renderCharts(categories) {
+            const ctx = document.getElementById('skillsChart').getContext('2d');
+            
+            if(skillsChartInstance) skillsChartInstance.destroy();
+
+            skillsChartInstance = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: Object.keys(categories),
+                    datasets: [{
+                        label: 'Skill Proficiency',
+                        data: Object.values(categories),
+                        backgroundColor: 'rgba(10, 102, 194, 0.2)',
+                        borderColor: 'rgba(10, 102, 194, 1)',
+                        pointBackgroundColor: '#10b981',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#10b981',
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            pointLabels: { color: '#cbd5e1', font: { size: 11 } },
+                            ticks: { display: false, min: 0, max: 100 }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // ==========================================
+        // MOCK DATA GENERATOR (Fallback)
+        // ==========================================
+        async function generateMockData(url) {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    resolve({
+                        url: url || 'https://linkedin.com/in/demo-user',
+                        full_name: "Alex Sterling (Demo Mode)",
+                        headline: "Senior Full Stack Engineer | Scalable Systems & AI Integrations",
+                        location: "San Francisco Bay Area, US",
+                        connections: "500+",
+                        profile_pic: "https://i.pravatar.cc/300?img=11",
+                        summary: "Passionate software engineer with 8+ years of experience building scalable backend architectures and intuitive frontend experiences. Strong track record of leading cross-functional teams to deliver enterprise-grade SaaS products. Constantly exploring the intersection of distributed systems and machine learning.",
+                        skills: ["JavaScript", "TypeScript", "React", "Node.js", "Python", "AWS", "Docker", "Kubernetes", "GraphQL", "PostgreSQL", "System Design"],
+                        skillCategories: {
+                            'Frontend': 90,
+                            'Backend': 85,
+                            'DevOps': 70,
+                            'Database': 80,
+                            'Architecture': 85,
+                            'Leadership': 75
+                        },
+                        experience: [
+                            {
+                                title: "Lead Software Engineer",
+                                company: "TechNova Solutions",
+                                location: "San Francisco, CA",
+                                duration: "Mar 2021 - Present",
+                                description: "Architected a microservices backend scaling to 2M+ daily active users. Led a team of 6 engineers to migrate legacy monolith to AWS EKS. Reduced API latency by 40% through Redis caching strategies and query optimization."
+                            },
+                            {
+                                title: "Senior Full Stack Developer",
+                                company: "CloudScale Inc",
+                                location: "Austin, TX (Remote)",
+                                duration: "Jun 2018 - Feb 2021",
+                                description: "Developed core features for the flagship SaaS platform using React and Node.js. Implemented a real-time analytics dashboard processing millions of data points using WebSockets and TimescaleDB."
+                            }
+                        ],
+                        education: [
+                            {
+                                school: "University of Washington",
+                                degree: "Master of Science in Computer Science",
+                                year: "Sep 2013 - Jun 2015"
+                            }
+                        ]
+                    });
+                }, 800);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useAuth } from "@clerk/expo";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import * as Sentry from "@sentry/react-native";
 
 const API_URL = "https://chat-app1-2oj4.onrender.com/api";
@@ -32,25 +32,19 @@ api.interceptors.response.use(
   }
 );
 
-
 export const useApi = () => {
-    const {getToken} = useAuth()
-    useEffect(()=>{
-        const requestInterceptor = api.interceptors.request.use(async(config)=>{
-            const token = await getToken();
-            if (token) {
-                config.headers.Authorization = `Bearer ${token}`
-            }
+  const { getToken } = useAuth();
 
-            return config
-        })
+  const apiWithAuth = useCallback(
+    async <T>(config: Parameters<typeof api.request>[0]) => {
+      const token = await getToken();
+      return api.request<T>({
+        ...config,
+        headers: { ...config.headers, ...(token && { Authorization: `Bearer ${token}` }) },
+      });
+    },
+    [getToken]
+  );
 
-        return()=> {
-            api.interceptors.request.eject(requestInterceptor)
-        }
-
-
-    }, [getToken])
-    return api
-
-}
+  return { api, apiWithAuth };
+};
