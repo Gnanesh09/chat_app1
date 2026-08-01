@@ -5,6 +5,6 @@ const router = Router()
 
 
 router.get("/", getChats)
-router.get("/with/:participantId", getOrCreateChat)
+router.post("/with/:participantId", getOrCreateChat)
 export default router
 
