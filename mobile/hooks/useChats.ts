@@ -1,6 +1,5 @@
 import { useApi } from "../lib/axios";
 import type { Chat } from "../types";
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const useChats = () => {
@@ -22,7 +21,7 @@ export const useGetOrCreateChat = () => {
   return useMutation({
     mutationFn: async (participantId: string) => {
       const { data } = await apiWithAuth<Chat>({
-        method: "POST",
+        method: "POST", // <-- This matches your new backend router.post
         url: `/chats/with/${participantId}`,
       });
       return data;
